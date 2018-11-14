@@ -7,7 +7,7 @@ function add_theme_scripts() {
     wp_enqueue_style('flesk-slider-css', get_stylesheet_directory_uri() . '/css/flexslider.css');
     wp_enqueue_style('bootstrap-min-css', get_stylesheet_directory_uri() . '/css/bootstrap.min.css');
     wp_enqueue_style('font-awesome.min', get_stylesheet_directory_uri() . '/css/font-awesome.min.css');
-    // wp_enqueue_style('live-fonts','https://fonts.googleapis.com/css?family=Titillium+Web:200,300,400,600,700,900');
+    // wp_enqueue_style('live-fonts','https://fonts.googleapis.com/csstemplate-preview-hidden?family=Titillium+Web:200,300,400,600,700,900');
     wp_enqueue_style('owl-carousel-min-css', get_stylesheet_directory_uri() . '/css/owl.carousel.min.css');
     wp_enqueue_style('owl-theme-min-css', get_stylesheet_directory_uri() . '/css/owl.theme.min.css');
     wp_enqueue_style('slick-css', get_stylesheet_directory_uri() . '/css/slick.css');
@@ -483,13 +483,35 @@ function getCoordinates($layoutID, $fieldName, $axis){
  function generateTextforImage($requestVar, $name, $image, $fontSize, $pageId, $color, $xMargin = 0, $yMargin = 0) {
      if( isset($_REQUEST[$requestVar]) && !empty($_REQUEST[$requestVar])) { 
          if( getCoordinates($pageId, $name,'x') && getCoordinates($pageId, $name,'x') ){
-            ImageString($image,$fontSize, getCoordinates($pageId, $name,'x') + $xMargin,getCoordinates($pageId, $name , 'y') + $yMargin, $_REQUEST[$requestVar],$color);
+             
+             if($requestVar == 'bRoutingFrac' || $requestVar == 'bAccountNumb'){
+              $fontfile = __DIR__.'/template-pages/api/micr.ttf';
+             } elseif($requestVar == 'bName' || $requestVar == 'sName'){
+              $fontfile = __DIR__.'/template-pages/api/cousine_bold.ttf';   
+             } else {
+              $fontfile = __DIR__.'/template-pages/api/cousine_reg.ttf';   
+            }
+           // ImageString($image,$fontSize, getCoordinates($pageId, $name,'x') + $xMargin,getCoordinates($pageId, $name , 'y') + $yMargin, $_REQUEST[$requestVar],$color);
+            imagettftext($image , $fontSize ,0, getCoordinates($pageId, $name,'x') + $xMargin ,getCoordinates($pageId, $name , 'y') + $yMargin , $color , $fontfile , $_REQUEST[$requestVar]);
          }
     }   
 }
 
 /**
- * Customizer register for the Live preview Api Section
+*test die
+**/
+function pr($data){
+    echo "<pre>";  
+    print_r($data);
+    echo "</pre>";
+    
+}
+/**
+ * customize
+ */
+
+/**
+ * Customizer register for the Live preview Api Secstion
  **/
 
 add_action('customize_register', 'live_image_customizer');
@@ -508,6 +530,119 @@ function live_image_customizer($wp_customize) {
         'settings' => 'api_page',
         'transport' => 'postMessage'
     ));
+    $wp_customize->add_setting('layoutes');
+    $wp_customize->add_control('layoutes', array(
+        'label' => __('layoutes', 'footer'),
+        'type' => 'text', 
+        'section' => 'live_image_preview',
+        'settings' => 'layoutes'
+        
+    )); 
+   
+    
    
 }
+
+
+/**
+ * Create custom taxonoy for Checks layout
+ **/
+ 
+ function create_layout_taxonomies() {
+    register_taxonomy(
+        'layout_type',
+        'layouts',
+        array(
+            'labels' => array(
+                'name' => 'Layout Types',
+                'add_new_item' => 'Add New Layout Type',
+                'new_item_name' => "New Layout Type"
+            ),
+            'show_ui' => true,
+            'show_tagcloud' => false,
+            'hierarchical' => true
+        )
+    );
+    
+    register_taxonomy(
+        'layout_tags',
+        'layouts',
+        array(
+            'labels' => array(
+                'name' => 'Layout Tags',
+                'add_new_item' => 'Add New Layout Tags',
+                'new_item_name' => "New Layout Tags"
+            ),
+            'show_ui' => true,
+            'show_tagcloud' => false,
+            'hierarchical' => true
+        )
+    );
+
+}
+
+add_action( 'init', 'create_layout_taxonomies', 0 );
+
+
+/**
+ * Add custom field to store the input.
+ */
+function iconic_output_engraving_field() {
+	global $product;
+
+	?>
+	<div id="template-preview">
+		<input type="hidden" id="template-preview-hidden" name="template-preview">
+	</div>
+	<?php
+}
+
+add_action( 'woocommerce_before_add_to_cart_button', 'iconic_output_engraving_field', 10 );
+
+/**
+ * Add custom data to the cart
+ **/
+ 
+ function iconic_add_engraving_text_to_cart_item( $cart_item_data, $product_id, $variation_id ) {
+    $engraving_text = filter_input( INPUT_POST, 'template-preview' );
+ 
+    if ( empty( $engraving_text ) ) {
+        return $cart_item_data;
+    }
+ 
+    $cart_item_data['template-preview'] = $engraving_text;
+ 
+    return $cart_item_data;
+}
+ 
+add_filter( 'woocommerce_add_cart_item_data', 'iconic_add_engraving_text_to_cart_item', 10, 3 );
+
+
+function iconic_display_engraving_text_cart( $item_data, $cart_item ) {
+    if ( empty( $cart_item['template-preview'] ) ) {
+        return $item_data;
+    }
+ 
+    $item_data[] = array(
+        'key'     => __( 'Template Preview URL', 'iconic' ),
+        'value'   => '<img src="'.wc_clean( $cart_item['template-preview'] ).'">',
+        'display' => '',
+    );
+ 
+    return $item_data;
+}
+ 
+add_filter( 'woocommerce_get_item_data', 'iconic_display_engraving_text_cart', 10, 2 );
+
+
+function iconic_add_engraving_text_to_order_items( $item, $cart_item_key, $values, $order ) {
+    if ( empty( $values['template-preview'] ) ) {
+        return;
+    }
+ 
+    $item->add_meta_data( __( 'Template Preview URL', 'iconic' ), $values['template-preview'] );
+}
+ 
+add_action( 'woocommerce_checkout_create_order_line_item', 'iconic_add_engraving_text_to_order_items', 10, 4 );
+
 ?>

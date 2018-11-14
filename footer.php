@@ -293,7 +293,7 @@
             ]
         });
         if (isMobile()) {
-            $(".choose-color-radio-div").find('li').hover(function () {
+            $(".choose-color-radio-div").find('li').click(function () {
                 $(".choose-color-radio-div").find('li').removeClass("tc-active");
                 $(".choose-color-radio-div").find('li').children("label").removeClass("cfm-active-tab");
                 $(".choose-color-radio-div").find('input.choose-color-radio').prop('checked', false);
@@ -301,7 +301,7 @@
                 $('.cfm-custom-background-div').find('.tm-filename').hide();
                 $(this).addClass("tc-active");
                 $(this).children("label").addClass("cfm-active-tab");
-                $(this).find('input.choose-color-radio').prop('checked', true);
+                $(this).find('input.choose-color-radio').prop('checked', true);       
             });
         }
     }(jQuery));
